@@ -7,7 +7,7 @@
 
 namespace Nette\Neon;
 
-use function array_keys, count, implode, preg_match, preg_match_all, str_replace, strlen, substr;
+use function implode, preg_match, preg_match_all, str_replace, strlen, substr;
 
 
 /** @internal */
@@ -50,20 +50,23 @@ final class Lexer
 	public function tokenize(string $input): TokenStream
 	{
 		$input = str_replace("\r", '', $input);
-		$pattern = '~(' . implode(')|(', self::Patterns) . ')~Amixu';
-		$res = preg_match_all($pattern, $input, $matches, PREG_SET_ORDER);
+		$branches = [];
+		foreach (self::Patterns as $type => $pattern) {
+			$branches[] = '(?:' . $pattern . ')(*MARK:' . $type . ')';
+		}
+		$pattern = '~' . implode('|', $branches) . '~Amixu';
+		$res = preg_match_all($pattern, $input, $matches, PREG_PATTERN_ORDER);
 		if ($res === false) {
 			throw new Exception('Invalid UTF-8 sequence.');
 		}
 
-		$types = array_keys(self::Patterns);
 		$position = new Position;
 
 		$tokens = [];
-		foreach ($matches as $match) {
-			$type = $types[count($match) - 2];
-			$tokens[] = new Token($type === Token::Char ? $match[0] : $type, $match[0], $position);
-			$position = $this->advance($position, $match[0]);
+		foreach ($matches[0] as $i => $text) {
+			$type = (int) $matches['MARK'][$i];
+			$tokens[] = new Token($type === Token::Char ? $text : $type, $text, $position);
+			$position = $this->advance($position, $text);
 		}
 
 		$tokens[] = new Token(Token::End, '', $position);

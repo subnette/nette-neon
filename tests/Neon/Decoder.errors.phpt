@@ -4,11 +4,30 @@
  * Test: Nette\Neon\Neon::decode errors.
  */
 
+use Nette\Neon\Lexer;
 use Nette\Neon\Neon;
+use Nette\Neon\Position;
 use Tester\Assert;
 
 
 require __DIR__ . '/../bootstrap.php';
+
+
+foreach (["\xFF", "name: \xC3", "`bad\xFF"] as $input) {
+	$exception = Assert::exception(
+		fn() => (new Lexer)->tokenize($input),
+		Nette\Neon\Exception::class,
+		'Invalid UTF-8 sequence.',
+	);
+	Assert::null($exception->position);
+}
+
+$exception = Assert::exception(
+	fn() => (new Lexer)->tokenize("'\u{17D}'\r\n  `bad"),
+	Nette\Neon\Exception::class,
+	"Unexpected '`bad' on line 2 at column 3",
+);
+Assert::equal(new Position(2, 3, 7), $exception->position);
 
 
 Assert::exception(

@@ -4,11 +4,23 @@
  * Test: Nette\Neon\Neon::decode.
  */
 
+use Nette\Neon\Lexer;
 use Nette\Neon\Neon;
+use Nette\Neon\Position;
+use Nette\Neon\Token;
 use Tester\Assert;
 
 
 require __DIR__ . '/../bootstrap.php';
+
+
+$stream = (new Lexer)->tokenize('');
+Assert::count(1, $stream->tokens);
+Assert::same(Token::End, $stream->tokens[0]->type);
+Assert::same('', $stream->tokens[0]->text);
+Assert::equal(new Position, $stream->tokens[0]->position);
+Assert::false($stream->is());
+Assert::true($stream->is(kind: Token::End));
 
 
 $dataSet = [
