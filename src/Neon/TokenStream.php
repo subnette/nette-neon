@@ -40,13 +40,16 @@ final class TokenStream
 	 */
 	public function is(int|string ...$kind): bool
 	{
-		while ($this->tokens[$this->index]->is(Token::Comment, Token::Whitespace)) {
-			$this->index++;
+		$tokens = $this->tokens;
+		$i = $this->index;
+		while (($type = $tokens[$i]->type) === Token::Comment || $type === Token::Whitespace) {
+			$i++;
 		}
 
+		$this->index = $i;
 		return $kind
-			? $this->tokens[$this->index]->is(...$kind)
-			: $this->tokens[$this->index]->type !== Token::End;
+			? in_array($type, $kind, strict: true)
+			: $type !== Token::End;
 	}
 
 
